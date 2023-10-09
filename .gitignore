@@ -1,0 +1,9 @@
+**/runs
+**/data
+**/models
+**/.idea
+**/__pycache__
+**/logs
+__pycache__
+__pycache__/
+**/pics
