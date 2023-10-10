@@ -1,6 +1,4 @@
 **/runs
-**/data
-**/models
 **/.idea
 **/__pycache__
 **/logs

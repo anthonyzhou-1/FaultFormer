@@ -12,7 +12,6 @@ from torch.utils.data import Dataset, DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 from utils import collate_fn_transpose, NoamOpt
-from fault_dataset import AugmentedDataset, AugmentedDatasetTest
 
 def train_model(model, params, train_dataloader=None, test_dataloader=None, optimizer=None):
 
@@ -103,10 +102,10 @@ def train_model(model, params, train_dataloader=None, test_dataloader=None, opti
     best_val_loss = float('inf')
     best_val_acc = 0
     timestr = time.strftime("%Y%m%d-%H%M%S")
-    best_model_params_path = "models/control/" + timestr
+    best_model_params_path = "models/" + timestr
     writer = SummaryWriter()
     
-    log_path = "logs/control/" + timestr + ".txt"
+    log_path = "logs/" + timestr + ".txt"
     with open(log_path, 'w') as file:
      file.write(json.dumps(params))
 

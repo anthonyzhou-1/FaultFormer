@@ -280,3 +280,94 @@ def shift(x, k=None):
         k = torch.randint(-800, 800, (1,)).tolist()
 
     return torch.roll(x, k, dims)
+
+def signal_power(x):
+    '''
+    Arguments:
+        x: tensor of shape (seq_len)
+    
+    Returns:
+        power of signal, determined by sum of squares
+    '''
+
+    n = len(x)
+    return torch.sum(torch.square(x))/n
+
+def noisify(x, SNR):
+    '''
+    Arguments:
+        x: tensor of shape (batch size, seq_len)
+        SNR: signal to noise ratio to determine how much noise to add
+    
+    Returns:
+        out: tensor of shape (batch size, seq_len)
+    '''
+
+    out = torch.zeros_like(x)
+
+    L, n = x.shape
+    den = 10**(SNR/10)
+
+    for i in range(L):
+        signal = x[i]
+        Pn = signal_power(signal)/den
+        out[i] = gaussian_noise(signal, std=Pn)
+
+    return out
+
+def fourier_iterate(x):
+    x_fourier = torch.zeros((560, 40, 3))
+
+    for i in range(len(x)):
+        x_fourier[i] = get_fourier_features(x[i], k=40)
+    return x_fourier
+
+def encoder_forward(model, x):
+    '''
+    Arguments:
+        model: Model to compute forward pass with
+        x: tensor of shape (seq_len, batch size, d_in)
+    
+    Returns:
+        out: tensor of shape (seq_len, batch size, d_in)
+
+    Performs partial forwad pass of encoder, to incrementally pass to encoder for attention visualization
+    '''
+
+    src = model.embedding(x)*math.sqrt(model.d_model)
+    src = model.cls(src)
+    src = model.pos_encoder(src)
+    return src
+
+def visualize_attn(w0, b0, src, head):
+    '''
+    Arguments:
+        w0: input projection, as defined by torch
+        b0: input bias, as defined by torch
+        src: tensor of shape (seq_len, batch size, d_in)
+        head: head to calculate attention for
+    
+    Returns:
+        alpha: attention scores at the current layer and head.
+    '''
+    s = nn.Softmax(dim=1)
+    w0_t = torch.transpose(w0, 0,1)
+    qkv = torch.matmul(src, w0_t)
+    qkv = qkv+b0
+
+    head_start = head*7
+    head_end = head_start + 7
+    q = qkv[:, :, :140].squeeze()
+    k = qkv[:, :, 140:280].squeeze()
+    v = qkv[:, : ,280:].squeeze()
+    
+    q_i = q[:, head_start:head_end]
+    k_i = k[:, head_start:head_end]
+    v_i = v[:, head_start:head_end]
+
+    qk_t = torch.matmul(q_i, torch.transpose(k_i, 0, 1))
+    qk_t = qk_t.detach()
+
+    alpha = s(qk_t)
+
+    return alpha.detach()
