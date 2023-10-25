@@ -5,7 +5,7 @@ from scipy import signal
 from utils import cutout, gaussian_noise, shift, crop, get_fourier_features
 
 class AugmentedDataset(Dataset):
-    def __init__(self, data_path = None, label_path = None, p_no_aug=1, p_two_aug=0, fourier=True, k = 4, test = False, mask=False):
+    def __init__(self, data_path = None, label_path = None, p_no_aug=1, p_two_aug=0, fourier=True, k = 10, test = False, mask=False):
         '''
         Arguments:
             data_path: Path to data
@@ -62,6 +62,7 @@ class AugmentedDataset(Dataset):
                         x = shift(x)
                     else:
                         x = crop(x)
+
                 else:
                     aug_idx = torch.randint(0,4, (1,)).item()
                     if(aug_idx == 0):
@@ -74,7 +75,7 @@ class AugmentedDataset(Dataset):
                         x = crop(gaussian_noise(x))
 
         if(self.fourier):
-            x = get_fourier_features(x, k=40)
+            x = get_fourier_features(x, k=60)
         else:
             x = signal.decimate(x, self.k)
             x = torch.from_numpy(x.copy())

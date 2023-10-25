@@ -43,7 +43,7 @@ def collate_fn_transpose(data):
 def train_val_split(data, labels, val_split=0.2):
     """
     Arguments:
-        data: torch tensor of shape (seq_len, n, d)
+        data: torch tensor of shape (n, seq_len)
         labels: torch tensor of shape (n)
         val_split: percent of data to form validation split
 
@@ -55,10 +55,10 @@ def train_val_split(data, labels, val_split=0.2):
     """
 
     train_idx, val_idx = train_test_split(list(range(len(labels))), test_size=val_split, random_state=42)
-    x_train = data[:, train_idx, :]
+    x_train = data[train_idx]
     y_train = labels[train_idx]
 
-    x_valid = data[:, val_idx, :]
+    x_valid = data[val_idx]
     y_valid = labels[val_idx]
 
     return x_train, y_train, x_valid, y_valid
@@ -211,11 +211,11 @@ def crop(x, start = None):
 
     Crops signal by half beginning at start, then resizes to original length
     '''
-
+    cropped_size = int(len(x)/2)
     if start == None:
-        start = torch.randint(0, 800, (1,)).item()
+        start = torch.randint(0, cropped_size, (1,)).item()
 
-    cropped = x[start:start+800].unsqueeze(0).unsqueeze(2)
+    cropped = x[start:start+cropped_size].unsqueeze(0).unsqueeze(2)
     m = torch.nn.Upsample(scale_factor=2)
     aug = m(cropped)
     aug = torch.flatten(aug)
@@ -254,11 +254,11 @@ def gaussian_noise(x, std=None):
     Returns: 
         aug: Tensor of shape (seq_len)
 
-    Adds gaussian noise to signal. std values between 0 and .05
+    Adds gaussian noise to signal. std values between 0 and .1
     '''
 
     if std== None:
-        std = .05*torch.rand((1,))
+        std = .1*torch.rand((1,))
 
     noise = std*torch.randn(x.shape)
     return x + noise
@@ -274,10 +274,10 @@ def shift(x, k=None):
 
     Shifts signal across time. k values between -800 and 800
     '''
-
+    shift_len = int(len(x)/2)
     dims = -1
     if(k == None):
-        k = torch.randint(-800, 800, (1,)).tolist()
+        k = torch.randint(-1*shift_len, shift_len, (1,)).tolist()
 
     return torch.roll(x, k, dims)
 

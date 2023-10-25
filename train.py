@@ -13,7 +13,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from utils import collate_fn_transpose, NoamOpt
 
-def train_model(model, params, train_dataloader=None, test_dataloader=None, optimizer=None):
+def train_model(model, params, train_dataloader=None, test_dataloader=None, optimizer=None, scheduler=None):
 
     def train(model: nn.Module, dataloader):
         """
@@ -45,6 +45,9 @@ def train_model(model, params, train_dataloader=None, test_dataloader=None, opti
             total_loss += loss.item()
             y_hat= torch.argmax(s(output), dim = 1)
             num_correct += (y_hat == labels).sum()
+
+        if(scheduler != None):
+            scheduler.step()
 
         return total_loss/(n_samples-1), num_correct/n_samples
 
@@ -97,7 +100,7 @@ def train_model(model, params, train_dataloader=None, test_dataloader=None, opti
     s = nn.Softmax(dim = 1).cuda()
     if(optimizer == None):
         optimizer = NoamOpt(d_model, warmup,
-                        torch.optim.Adam(model.parameters(), lr=0, betas=(0.9, 0.98), eps=1e-9))
+                        torch.optim.Adam(model.parameters(), lr=1e-3, betas=(0.9, 0.98), eps=1e-9))
 
     best_val_loss = float('inf')
     best_val_acc = 0
@@ -123,6 +126,9 @@ def train_model(model, params, train_dataloader=None, test_dataloader=None, opti
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': train_loss,}, best_model_params_path)
+        
+        if val_acc > best_val_acc:
+            best_val_acc = val_acc
 
         writer.add_scalar("Loss/train", train_loss, epoch)
         writer.add_scalar("Loss/valid", val_loss, epoch)
